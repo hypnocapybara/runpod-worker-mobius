@@ -39,7 +39,7 @@ class ModelHandler:
         vae = AutoencoderKL.from_pretrained(
             "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
         base_pipe = StableDiffusionXLPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0", vae=vae,
+            "Corcelio/mobius", vae=vae,
             torch_dtype=torch.float16, variant="fp16", use_safetensors=True, add_watermarker=False
         )
         base_pipe = base_pipe.to("cuda", silence_dtype_warnings=True)
@@ -136,7 +136,7 @@ def generate_image(job):
         ).images
     else:
         # Generate latent image using pipe
-        image = MODELS.base(
+        output = MODELS.base(
             prompt=job_input['prompt'],
             negative_prompt=job_input['negative_prompt'],
             height=job_input['height'],
@@ -149,20 +149,20 @@ def generate_image(job):
             generator=generator
         ).images
 
-        try:
-            output = MODELS.refiner(
-                prompt=job_input['prompt'],
-                num_inference_steps=job_input['refiner_inference_steps'],
-                strength=job_input['strength'],
-                image=image,
-                num_images_per_prompt=job_input['num_images'],
-                generator=generator
-            ).images
-        except RuntimeError as err:
-            return {
-                "error": f"RuntimeError: {err}, Stack Trace: {err.__traceback__}",
-                "refresh_worker": True
-            }
+        # try:
+        #     output = MODELS.refiner(
+        #         prompt=job_input['prompt'],
+        #         num_inference_steps=job_input['refiner_inference_steps'],
+        #         strength=job_input['strength'],
+        #         image=image,
+        #         num_images_per_prompt=job_input['num_images'],
+        #         generator=generator
+        #     ).images
+        # except RuntimeError as err:
+        #     return {
+        #         "error": f"RuntimeError: {err}, Stack Trace: {err.__traceback__}",
+        #         "refresh_worker": True
+        #     }
 
     image_urls = _save_and_upload_images(output, job['id'])
 
