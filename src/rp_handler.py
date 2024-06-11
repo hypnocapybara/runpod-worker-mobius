@@ -116,6 +116,7 @@ def generate_image(job):
     job_input = validated_input['validated_input']
 
     starting_image = job_input['image_url']
+    should_run_refiner = job_input.get('run_refiner') is not None
 
     if job_input['seed'] is None:
         job_input['seed'] = int.from_bytes(os.urandom(2), "big")
@@ -136,7 +137,7 @@ def generate_image(job):
         ).images
     else:
         # Generate latent image using pipe
-        output = MODELS.base(
+        image = MODELS.base(
             prompt=job_input['prompt'],
             negative_prompt=job_input['negative_prompt'],
             height=job_input['height'],
@@ -149,20 +150,23 @@ def generate_image(job):
             generator=generator
         ).images
 
-        # try:
-        #     output = MODELS.refiner(
-        #         prompt=job_input['prompt'],
-        #         num_inference_steps=job_input['refiner_inference_steps'],
-        #         strength=job_input['strength'],
-        #         image=image,
-        #         num_images_per_prompt=job_input['num_images'],
-        #         generator=generator
-        #     ).images
-        # except RuntimeError as err:
-        #     return {
-        #         "error": f"RuntimeError: {err}, Stack Trace: {err.__traceback__}",
-        #         "refresh_worker": True
-        #     }
+        if should_run_refiner:
+            try:
+                output = MODELS.refiner(
+                    prompt=job_input['prompt'],
+                    num_inference_steps=job_input['refiner_inference_steps'],
+                    strength=job_input['strength'],
+                    image=image,
+                    num_images_per_prompt=job_input['num_images'],
+                    generator=generator
+                ).images
+            except RuntimeError as err:
+                return {
+                    "error": f"RuntimeError: {err}, Stack Trace: {err.__traceback__}",
+                    "refresh_worker": True
+                }
+        else:
+            output = image
 
     image_urls = _save_and_upload_images(output, job['id'])
 
