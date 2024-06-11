@@ -53,6 +53,11 @@ INPUT_SCHEMA = {
         'required': False,
         'default': None
     },
+    'run_refiner': {
+        'type': bool,
+        'required': False,
+        'default': False
+    },
     'num_images': {
         'type': int,
         'required': False,

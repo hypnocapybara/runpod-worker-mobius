@@ -116,7 +116,7 @@ def generate_image(job):
     job_input = validated_input['validated_input']
 
     starting_image = job_input['image_url']
-    should_run_refiner = job_input.get('run_refiner') is not None
+    should_run_refiner = job_input['run_refiner']
 
     if job_input['seed'] is None:
         job_input['seed'] = int.from_bytes(os.urandom(2), "big")
