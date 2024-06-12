@@ -1,17 +1,14 @@
-# builder/model_fetcher.py
-
-import torch
-from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, AutoencoderKL
+from huggingface_hub import snapshot_download
 
 
-def fetch_pretrained_model(model_class, model_name, **kwargs):
-    '''
+def fetch_pretrained_model(model_name):
+    """
     Fetches a pretrained model from the HuggingFace model hub.
-    '''
+    """
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            return model_class.from_pretrained(model_name, **kwargs)
+            return snapshot_download(repo_id=model_name, repo_type="model")
         except OSError as err:
             if attempt < max_retries - 1:
                 print(
@@ -20,27 +17,15 @@ def fetch_pretrained_model(model_class, model_name, **kwargs):
                 raise
 
 
-def get_diffusion_pipelines():
-    '''
-    Fetches the Stable Diffusion XL pipelines from the HuggingFace model hub.
-    '''
-    common_args = {
-        "torch_dtype": torch.float16,
-        "variant": "fp16",
-        "use_safetensors": True
-    }
+def warm_up_pipeline():
+    """
+    Fetches the pipelines from the HuggingFace model hub.
+    """
 
-    pipe = fetch_pretrained_model(StableDiffusionXLPipeline,
-                                  "Corcelio/mobius", **common_args)
-    vae = fetch_pretrained_model(
-        AutoencoderKL, "madebyollin/sdxl-vae-fp16-fix", **{"torch_dtype": torch.float16}
-    )
-    print("Loaded VAE")
-    refiner = fetch_pretrained_model(StableDiffusionXLImg2ImgPipeline,
-                                     "stabilityai/stable-diffusion-xl-refiner-1.0", **common_args)
-
-    return pipe, refiner, vae
+    fetch_pretrained_model("Corcelio/mobius")
+    fetch_pretrained_model("madebyollin/sdxl-vae-fp16-fix")
+    fetch_pretrained_model("stabilityai/stable-diffusion-xl-refiner-1.0")
 
 
 if __name__ == "__main__":
-    get_diffusion_pipelines()
+    warm_up_pipeline()

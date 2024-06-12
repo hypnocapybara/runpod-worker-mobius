@@ -137,6 +137,7 @@ def generate_image(job):
         ).images
     else:
         # Generate latent image using pipe
+        output_type = "latent" if should_run_refiner else "pil"
         image = MODELS.base(
             prompt=job_input['prompt'],
             negative_prompt=job_input['negative_prompt'],
@@ -145,7 +146,7 @@ def generate_image(job):
             num_inference_steps=job_input['num_inference_steps'],
             guidance_scale=job_input['guidance_scale'],
             denoising_end=job_input['high_noise_frac'],
-            output_type="latent",
+            output_type=output_type,
             num_images_per_prompt=job_input['num_images'],
             generator=generator
         ).images
