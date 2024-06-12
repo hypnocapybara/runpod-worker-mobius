@@ -148,6 +148,7 @@ def generate_image(job):
             denoising_end=job_input['high_noise_frac'],
             output_type=output_type,
             num_images_per_prompt=job_input['num_images'],
+            clip_skip=job_input['clip_skip'],
             generator=generator
         ).images
 

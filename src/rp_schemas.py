@@ -69,4 +69,9 @@ INPUT_SCHEMA = {
         'required': False,
         'default': None
     },
+    'clip_skip': {
+        'type': int,
+        'required': False,
+        'default': 3,
+    }
 }
