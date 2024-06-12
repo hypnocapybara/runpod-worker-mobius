@@ -1,5 +1,5 @@
 # Base image
-FROM runpod/base:0.4.2-cuda11.8.0
+FROM runpod/base:0.6.2-cuda12.1.0
 
 ENV HF_HUB_ENABLE_HF_TRANSFER=0
 

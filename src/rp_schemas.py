@@ -23,11 +23,6 @@ INPUT_SCHEMA = {
         'required': False,
         'default': None
     },
-    'scheduler': {
-        'type': str,
-        'required': False,
-        'default': 'DDIM'
-    },
     'num_inference_steps': {
         'type': int,
         'required': False,
@@ -48,16 +43,6 @@ INPUT_SCHEMA = {
         'required': False,
         'default': 0.3
     },
-    'image_url': {
-        'type': str,
-        'required': False,
-        'default': None
-    },
-    'run_refiner': {
-        'type': bool,
-        'required': False,
-        'default': False
-    },
     'num_images': {
         'type': int,
         'required': False,
@@ -68,10 +53,5 @@ INPUT_SCHEMA = {
         'type': float,
         'required': False,
         'default': None
-    },
-    'clip_skip': {
-        'type': int,
-        'required': False,
-        'default': 3,
     }
 }

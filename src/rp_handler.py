@@ -7,16 +7,8 @@ import base64
 import concurrent.futures
 
 import torch
-from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, AutoencoderKL
-from diffusers.utils import load_image
 
-from diffusers import (
-    PNDMScheduler,
-    LMSDiscreteScheduler,
-    DDIMScheduler,
-    EulerDiscreteScheduler,
-    DPMSolverMultistepScheduler,
-)
+from diffusers import StableDiffusion3Pipeline
 
 import runpod
 from runpod.serverless.utils import rp_upload, rp_cleanup
@@ -32,38 +24,21 @@ torch.cuda.empty_cache()
 class ModelHandler:
     def __init__(self):
         self.base = None
-        self.refiner = None
         self.load_models()
 
     def load_base(self):
-        vae = AutoencoderKL.from_pretrained(
-            "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
-        base_pipe = StableDiffusionXLPipeline.from_pretrained(
-            "Corcelio/mobius", vae=vae,
-            torch_dtype=torch.float16, variant="fp16", use_safetensors=True, add_watermarker=False
+        pipe = StableDiffusion3Pipeline.from_pretrained(
+            "stabilityai/stable-diffusion-3-medium-diffusers",
+            torch_dtype=torch.float16
         )
-        base_pipe = base_pipe.to("cuda", silence_dtype_warnings=True)
-        base_pipe.enable_xformers_memory_efficient_attention()
-        return base_pipe
-
-    def load_refiner(self):
-        vae = AutoencoderKL.from_pretrained(
-            "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
-        refiner_pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-refiner-1.0", vae=vae,
-            torch_dtype=torch.float16, variant="fp16", use_safetensors=True, add_watermarker=False
-        )
-        refiner_pipe = refiner_pipe.to("cuda", silence_dtype_warnings=True)
-        refiner_pipe.enable_xformers_memory_efficient_attention()
-        return refiner_pipe
+        pipe = pipe.to("cuda", silence_dtype_warnings=True)
+        return pipe
 
     def load_models(self):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future_base = executor.submit(self.load_base)
-            future_refiner = executor.submit(self.load_refiner)
 
             self.base = future_base.result()
-            self.refiner = future_refiner.result()
 
 
 MODELS = ModelHandler()
@@ -91,16 +66,6 @@ def _save_and_upload_images(images, job_id):
     return image_urls
 
 
-def make_scheduler(name, config):
-    return {
-        "PNDM": PNDMScheduler.from_config(config),
-        "KLMS": LMSDiscreteScheduler.from_config(config),
-        "DDIM": DDIMScheduler.from_config(config),
-        "K_EULER": EulerDiscreteScheduler.from_config(config),
-        "DPMSolverMultistep": DPMSolverMultistepScheduler.from_config(config),
-    }[name]
-
-
 @torch.inference_mode()
 def generate_image(job):
     '''
@@ -115,71 +80,31 @@ def generate_image(job):
         return {"error": validated_input['errors']}
     job_input = validated_input['validated_input']
 
-    starting_image = job_input['image_url']
-    should_run_refiner = job_input['run_refiner']
-
     if job_input['seed'] is None:
         job_input['seed'] = int.from_bytes(os.urandom(2), "big")
 
     generator = torch.Generator("cuda").manual_seed(job_input['seed'])
 
-    MODELS.base.scheduler = make_scheduler(
-        job_input['scheduler'], MODELS.base.scheduler.config)
+    # Generate latent image using pipe
+    images = MODELS.base(
+        prompt=job_input['prompt'],
+        negative_prompt=job_input['negative_prompt'],
+        height=job_input['height'],
+        width=job_input['width'],
+        num_inference_steps=job_input['num_inference_steps'],
+        guidance_scale=job_input['guidance_scale'],
+        denoising_end=job_input['high_noise_frac'],
+        num_images_per_prompt=job_input['num_images'],
+        generator=generator
+    ).images
 
-    if starting_image:  # If image_url is provided, run only the refiner pipeline
-        init_image = load_image(starting_image).convert("RGB")
-        output = MODELS.refiner(
-            prompt=job_input['prompt'],
-            num_inference_steps=job_input['refiner_inference_steps'],
-            strength=job_input['strength'],
-            image=init_image,
-            generator=generator
-        ).images
-    else:
-        # Generate latent image using pipe
-        output_type = "latent" if should_run_refiner else "pil"
-        image = MODELS.base(
-            prompt=job_input['prompt'],
-            negative_prompt=job_input['negative_prompt'],
-            height=job_input['height'],
-            width=job_input['width'],
-            num_inference_steps=job_input['num_inference_steps'],
-            guidance_scale=job_input['guidance_scale'],
-            denoising_end=job_input['high_noise_frac'],
-            output_type=output_type,
-            num_images_per_prompt=job_input['num_images'],
-            clip_skip=job_input['clip_skip'],
-            generator=generator
-        ).images
-
-        if should_run_refiner:
-            try:
-                output = MODELS.refiner(
-                    prompt=job_input['prompt'],
-                    num_inference_steps=job_input['refiner_inference_steps'],
-                    strength=job_input['strength'],
-                    image=image,
-                    num_images_per_prompt=job_input['num_images'],
-                    generator=generator
-                ).images
-            except RuntimeError as err:
-                return {
-                    "error": f"RuntimeError: {err}, Stack Trace: {err.__traceback__}",
-                    "refresh_worker": True
-                }
-        else:
-            output = image
-
-    image_urls = _save_and_upload_images(output, job['id'])
+    image_urls = _save_and_upload_images(images, job['id'])
 
     results = {
         "images": image_urls,
         "image_url": image_urls[0],
         "seed": job_input['seed']
     }
-
-    if starting_image:
-        results['refresh_worker'] = True
 
     return results
 
