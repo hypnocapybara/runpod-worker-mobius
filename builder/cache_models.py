@@ -22,9 +22,7 @@ def warm_up_pipeline():
     Fetches the pipelines from the HuggingFace model hub.
     """
 
-    fetch_pretrained_model("Corcelio/mobius")
-    fetch_pretrained_model("madebyollin/sdxl-vae-fp16-fix")
-    fetch_pretrained_model("stabilityai/stable-diffusion-xl-refiner-1.0")
+    fetch_pretrained_model("stabilityai/stable-diffusion-3-medium-diffusers")
 
 
 if __name__ == "__main__":
