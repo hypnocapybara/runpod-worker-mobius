@@ -24,7 +24,8 @@ def warm_up_pipeline():
     """
 
     hf_token = os.environ.get("HF_TOKEN", None)
-    fetch_pretrained_model("stabilityai/stable-diffusion-3-medium-diffusers", hf_token)
+    fetch_pretrained_model("madebyollin/sdxl-vae-fp16-fix", hf_token)
+    fetch_pretrained_model("dataautogpt3/ProteusV0.4", hf_token)
 
 
 if __name__ == "__main__":

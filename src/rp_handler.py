@@ -8,7 +8,7 @@ import concurrent.futures
 
 import torch
 
-from diffusers import StableDiffusion3Pipeline
+from diffusers import StableDiffusionXLPipeline, KDPM2AncestralDiscreteScheduler, AutoencoderKL
 
 import runpod
 from runpod.serverless.utils import rp_upload, rp_cleanup
@@ -27,10 +27,17 @@ class ModelHandler:
         self.load_models()
 
     def load_base(self):
-        pipe = StableDiffusion3Pipeline.from_pretrained(
-            "stabilityai/stable-diffusion-3-medium-diffusers",
+        vae = AutoencoderKL.from_pretrained(
+            "madebyollin/sdxl-vae-fp16-fix",
             torch_dtype=torch.float16
         )
+
+        pipe = StableDiffusionXLPipeline.from_pretrained(
+            "dataautogpt3/ProteusV0.4",
+            vae=vae,
+            torch_dtype=torch.float16
+        )
+        pipe.scheduler = KDPM2AncestralDiscreteScheduler.from_config(pipe.scheduler.config)
         pipe = pipe.to("cuda", silence_dtype_warnings=True)
         return pipe
 
