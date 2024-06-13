@@ -1,14 +1,15 @@
+import os
 from huggingface_hub import snapshot_download
 
 
-def fetch_pretrained_model(model_name):
+def fetch_pretrained_model(model_name, hf_token=None):
     """
     Fetches a pretrained model from the HuggingFace model hub.
     """
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            return snapshot_download(repo_id=model_name, repo_type="model")
+            return snapshot_download(repo_id=model_name, repo_type="model", token=hf_token)
         except OSError as err:
             if attempt < max_retries - 1:
                 print(
@@ -22,7 +23,8 @@ def warm_up_pipeline():
     Fetches the pipelines from the HuggingFace model hub.
     """
 
-    fetch_pretrained_model("stabilityai/stable-diffusion-3-medium-diffusers")
+    hf_token = os.environ.get("HF_TOKEN", None)
+    fetch_pretrained_model("stabilityai/stable-diffusion-3-medium-diffusers", hf_token)
 
 
 if __name__ == "__main__":
