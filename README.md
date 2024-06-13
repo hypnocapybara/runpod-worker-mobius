@@ -1,12 +1,12 @@
 <div align="center">
 
-<h1>Stable Diffusion XL | Worker</h1>
+<h1>Stable Diffusion 3 | Worker</h1>
 
 [![CI | Test Worker](https://github.com/runpod-workers/worker-sdxl/actions/workflows/CI-test_worker.yml/badge.svg)](https://github.com/runpod-workers/worker-sdxl/actions/workflows/CI-test_worker.yml)
 &nbsp;
 [![CD | Dev Docker Image](https://github.com/runpod-workers/worker-sdxl/actions/workflows/CD-docker_dev.yml/badge.svg)](https://github.com/runpod-workers/worker-sdxl/actions/workflows/CD-docker_dev.yml)
 
-🚀 | RunPod implementation of SDXL for serverless deployment.
+🚀 | RunPod implementation of SD3-medium for serverless deployment.
 </div>
 
 ## 📖 | Getting Started

@@ -9,13 +9,10 @@ RUN python3.11 -m pip install --upgrade pip && \
     python3.11 -m pip install --upgrade -r /requirements.txt --no-cache-dir && \
     rm /requirements.txt
 
-# HF Token
-RUN --mount=type=secret,id=hf_token \
- export HF_TOKEN=$(cat /run/secrets/hf_token)
-
 # Cache Models
 COPY builder/cache_models.py /cache_models.py
-RUN python3.11 /cache_models.py && \
+RUN --mount=type=secret,id=HF_TOKEN \
+ HF_TOKEN=$(cat /run/secrets/HF_TOKEN) python3.11 /cache_models.py && \
     rm /cache_models.py
 
 # Add src files (Worker Template)
